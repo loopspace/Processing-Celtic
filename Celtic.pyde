@@ -1,26 +1,76 @@
 import math
+
 step = 5
 grid = step*8
 p = PVector(-240+grid/2,-240)
 v = PVector(step,step)
 s = p.copy()
 d = 1
+PHI = (1 + math.sqrt(5))/2
+c = 0
+r = True
+
+def hsl2rgb(h,s,l):
+    h = (h - math.floor(h)) * 6
+    c = (1 - abs(2 * l - 1)) * s * 255
+    m =  l * 255 - c/2
+    x = c * (1 - abs(h%2 - 1))
+    if h < 1:
+        return int(c + m), int(x + m), int(m)
+    elif h < 2:
+        return int(x + m), int(c + m), int(m)
+    elif h < 3:
+        return int(m), int(c + m), int(x + m)
+    elif h < 4:
+        return int(m), int(x + m), int(c + m)
+    elif h < 5:
+        return int(x + m), int(m), int(c + m)
+    else:
+        return int(c + m), int(m), int(x + m)
+
+def hsv2rgb(h,s,v):
+    h = (h - math.floor(h)) * 6
+    m = (v - s*v)*255 
+    c = s * v * 255 
+    x = c * (1 - abs(h%2 - 1)) 
+    if h < 1:
+        return int(c+m),int(x+m),int(m)
+    elif h < 2:
+        return int(x+m),int(c+m),int(m)
+    elif h < 3:
+        return int(m),int(c+m),int(x+m)
+    elif h < 4:
+        return int(m),int(x+m),int(c+m)
+    elif h < 5:
+        return int(x+m),int(m),int(c+m)
+    else:
+        return int(c+m),int(m),int(x+m)
 
 def setup():
+    global img, c
     size(480,480)
     background(255)
     gsize = 480/grid
-    stroke(255,0,0)
+    img = createGraphics(480,480)
+    img.beginDraw()
+    img.stroke(0)
     for i in range(gsize):
         for j in range(gsize):
-            rect(i*grid,j*grid,grid,grid)
+            img.rect(i*grid,j*grid,grid,grid)
+    img.endDraw()
     stroke(0)
 
 def draw():
-    global p, s, v, d
+    global p, s, v, d, c, r
+    background(255)
     translate(240,240)
     scale(1,-1)
     fill(0)
+    imageMode(CENTER)
+    pushMatrix()
+    scale(1,-1)
+    image(img,0,0)
+    popMatrix()
     gd = ((p.x - grid/4)//(grid/2))%2
     if (gd == d
     or abs(p.x) >= 240 - step 
@@ -31,8 +81,20 @@ def draw():
         and p.x%grid != grid - step
         and p.y%grid != step    
         and p.y%grid != grid - step)):
-        ellipse(p.x,p.y,step,step)
+        img.beginDraw()
+        #img.fill(0)
+        img.noStroke()
+        img.fill(*hsl2rgb(c*PHI,1,.5))
+        img.translate(240,240)
+        img.scale(1,-1)
+        img.ellipse(p.x,p.y,step,step)
+        img.endDraw()
+    
+    ellipse(p.x,p.y,step,step)
     saveFrame("frames/celtic-####.png")
+    if not r:
+        print("done")
+        noLoop()
     p.add(v)
     if abs(p.x) > 240 and p.x * v.x > 0:
         v.x = - v.x
@@ -53,6 +115,6 @@ def draw():
         p = s.copy()
         v = PVector(step,step)
         d = 1 - d
+        c += 1
         if s.x > 240:
-            print("done")
-            noLoop()
+            r = False
