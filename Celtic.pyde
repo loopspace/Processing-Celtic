@@ -3,40 +3,43 @@ from Colour import hsl2rgb
 
 step = 5
 grid = step*8
-edge = 240/grid
+xsize = 14
+ysize = 5
 PHI = (1 + math.sqrt(5))/2
 c = 0
 r = True
-walls = [
-         (3,0,1),
-         (0,3,0),
-         (-3,0,1),
-         (0,-3,0),
-         (7,0,1),
-         (0,7,0),
-         (-7,0,1),
-         (0,-7,0),
-         (7,4,1),
-         (4,7,0),
-         (-7,4,1),
-         (4,-7,0),
-         (7,-4,1),
-         (-4,7,0),
-         (-7,-4,1),
-         (-4,-7,0)
-         ] # 0 is horizontal, 1 vertical
+recording = True
+walls = {
+         (0,4,1),
+         (6,2,1),
+         (6,4,1),
+         (10,2,1),
+         (10,4,1),
+         (5,1,0),
+         (2,2,0),
+         } # 0 is horizontal, 1 vertical
 
 crossings = []
-for i in range(4*edge+1):
+for i in range(2*xsize+1):
     crossings.append([])
-    for j in range(4*edge+1):
+    for j in range(2*ysize+1):
         crossings[i].append(0)
 
-for i in range(4*edge+1):
-    crossings[2*edge][i] = 8+4
-    crossings[-2*edge][i] = 2+1
-    crossings[i][2*edge] = 8+2
-    crossings[i][-2*edge] = 4+1
+for i in range(2*ysize+1):
+    crossings[xsize][i] = 8+4
+    crossings[-xsize][i] = 2+1
+for i in range(2*xsize+1):
+    crossings[i][ysize] = 8+2
+    crossings[i][-ysize] = 4+1
+
+def symmetriseCrossings():
+    a = set()
+    for w in walls:
+        a.add((w[0],-w[1],w[2]))
+        a.add((-w[0],-w[1],w[2]))
+        a.add((-w[0],w[1],w[2]))
+    for b in a:
+        walls.add(b)
 
 def nearCrossing(p):
     '''Are we plus or minus 1 from a crossing?'''
@@ -65,9 +68,9 @@ def crossingType(p):
     if w:
         return 0
     gx,gy = getCrossing(p)
-    if abs(gx) == 2*edge:
+    if abs(gx) == xsize:
         return 0
-    if abs(gy) == 2*edge:
+    if abs(gy) == ysize:
         return 0
     if gx%2 == 1:
         return 1
@@ -76,10 +79,10 @@ def crossingType(p):
 def getWall(p):
     '''Get the wall at the given crossing.'''
     gx,gy = getCrossing(p)
-    if abs(gx) == 2*edge:
+    if abs(gx) == xsize:
         # Vertical edge
         return [False,False,1]
-    if abs(gy) == 2*edge:
+    if abs(gy) == ysize:
         # Horizontal edge
         return [False,False,0]
     for w in walls:
@@ -89,10 +92,10 @@ def getWall(p):
 
 def newStrand():
     for i in range(len(crossings)):
-        x = (i + 2*edge)%(4*edge+1) - 2*edge
+        x = (i + xsize)%(2*xsize+1) - xsize
         for j in range(len(crossings[i])):
-            y = (j + 2*edge)%(4*edge+1) - 2*edge
-            if (x + y)%2 == 1:
+            y = (j + ysize)%(2*ysize+1) - ysize
+            if (x + xsize + y + ysize)%2 == 1:
                 if crossings[i][j] != 15:
                     p = PVector(x * grid/2, y * grid/2)
                     a = crossings[i][j]
@@ -112,22 +115,22 @@ def newStrand():
     return False, False
 
 def setup():
+    symmetriseCrossings()
     global img, p, v, s, u
     p,v = newStrand()
     s = p.copy()
     u = v.copy()
-    size(480,480)
+    size(xsize*grid,ysize*grid)
     background(255)
-    gsize = 480/grid
-    img = createGraphics(480,480)
+    img = createGraphics(xsize*grid,ysize*grid)
     img.beginDraw()
-    img.translate(240,240)
+    img.translate(xsize*grid/2,ysize*grid/2)
     img.scale(1,-1)
     img.stroke(127)
     img.strokeWeight(0)
-    for i in range(-gsize/2,gsize/2):
-        for j in range(-gsize/2,gsize/2):
-            img.rect(i*grid,j*grid,grid,grid)
+    for i in range(0,xsize):
+        for j in range(0,ysize):
+            img.rect(i*grid-xsize*grid/2,j*grid-ysize*grid/2,grid,grid)
     img.stroke(0)
     img.strokeWeight(3)
     for w in walls:
@@ -138,7 +141,7 @@ def setup():
 def draw():
     global p, s, v, u, c, r
     background(255)
-    translate(240,240)
+    translate(xsize*grid/2,ysize*grid/2)
     scale(1,-1)
     fill(0)
     imageMode(CENTER)
@@ -147,7 +150,8 @@ def draw():
     image(img,0,0)
     popMatrix()
     if not r:
-        saveFrame("frames/celtic-####.png")
+        if recording:
+            saveFrame("frames/celtic-####.png")
         print("All done")
         noLoop()
         return
@@ -176,13 +180,14 @@ def draw():
         #img.fill(0)
         img.noStroke()
         img.fill(*hsl2rgb(c*PHI,1,.5))
-        img.translate(240,240)
+        img.translate(xsize*grid/2,ysize*grid/2)
         img.scale(1,-1)
         img.ellipse(p.x,p.y,step,step)
         img.endDraw()
     ellipse(p.x,p.y,step,step)
-
-    saveFrame("frames/celtic-####.png")
+    
+    if recording:
+        saveFrame("frames/celtic-####.png")
 
     if p == s and v == u:
         p,v = newStrand()
