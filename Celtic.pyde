@@ -1,198 +1,52 @@
 import math
-from Colour import hsl2rgb
+from colour import hsl2rgb
+import config
+import utils
+from links import *
+import letters
 
-recording = True
-drawWalls = False
-drawGrid = False
-
-step = 5
-grid = step*8
 PHI = (1 + math.sqrt(5))/2
 c = 0
 r = True
 
-xsize = 4
-ysize = 4
-walls = set()
-crossings = []
-ignoreCrossings = set()
-
-def Borromean():
-    global xsize, ysize, walls
-    xsize = 14
-    ysize = 5
-    walls = {
-            (0,4,1),
-            (6,2,1),
-            (6,4,1),
-            (10,2,1),
-            (10,4,1),
-            (5,1,0),
-            (2,2,0),
-            } # 0 is horizontal, 1 vertical
-    symmetriseWalls()
-
-def longChain():
-    global xsize, ysize, walls, ignoreCrossings
-    xsize = 11
-    ysize = 4
-    walls = {
-             (10,0,0),
-             (6,0,0),
-             (2,0,0),
-             (0,2,1),
-             (8,2,1),
-             (4,2,0),
-             (5,3,1),
-             (3,3,1)
-             }
-    ignoreCrossings = {
-                       (3,3),
-                       (4,4),
-                       (5,3),
-                       (4,2)
-                       }
-    symmetriseWalls()
-    symmetriseIgnores()
-
-
-def initialiseCrossings():
-    for i in range(2*xsize+1):
-        crossings.append([])
-        for j in range(2*ysize+1):
-            crossings[i].append(0)
-    
-    for i in range(2*ysize+1):
-        crossings[xsize][i] = 8+4
-        crossings[-xsize][i] = 2+1
-    for i in range(2*xsize+1):
-        crossings[i][ysize] = 8+2
-        crossings[i][-ysize] = 4+1
-    
-def symmetriseWalls():
-    a = set()
-    for w in walls:
-        a.add((w[0],-w[1],w[2]))
-        a.add((-w[0],-w[1],w[2]))
-        a.add((-w[0],w[1],w[2]))
-    for b in a:
-        walls.add(b)
-
-def symmetriseIgnores():
-    a = set()
-    for i in ignoreCrossings:
-        a.add((i[0],-i[1]))
-        a.add((-i[0],-i[1]))
-        a.add((-i[0],i[1]))
-    for b in a:
-        ignoreCrossings.add(b)
-
-def nearCrossing(p):
-    '''Are we plus or minus 1 from a crossing?'''
-    x = p.x%(grid/2)
-    y = p.y%(grid/2)
-    if x == step or x == grid/2 - step or y == step or y == grid/2 - step:
-        return True
-    return False
-
-def atCrossing(p):
-    '''Are we at a crossing?'''
-    x = p.x%(grid/2)
-    y = p.y%(grid/2)
-    if x == 0 or y == 0:
-        return True
-    return False
-    
-def getCrossing(p):
-    '''Get the nearest half-grid coordinate.'''
-    return int((p.x + grid/4)//(grid/2)), int((p.y + grid/4)//(grid/2))
-
-def crossingType(p):
-    '''Get the crossing type of the nearest half-grid coordinate.
-    Returns 0 for a wall, 1 for main diagonal over, -1 for a under.'''
-    w = getWall(p)
-    if w:
-        return 0
-    gx,gy = getCrossing(p)
-    if abs(gx) == xsize:
-        return 0
-    if abs(gy) == ysize:
-        return 0
-    if gx%2 == 1:
-        return 1
-    return -1
-
-def getWall(p):
-    '''Get the wall at the given crossing.'''
-    gx,gy = getCrossing(p)
-    if abs(gx) == xsize:
-        # Vertical edge
-        return [gx,gy,1]
-    if abs(gy) == ysize:
-        # Horizontal edge
-        return [gx,gy,0]
-    for w in walls:
-        if gx == w[0] and gy == w[1]:
-            return w
-    return False
-
-def newStrand():
-    for i in range(len(crossings)):
-        x = (i + xsize)%(2*xsize+1) - xsize
-        for j in range(len(crossings[i])):
-            y = (j + ysize)%(2*ysize+1) - ysize
-            if (x + xsize + y + ysize)%2 == 1:
-                if crossings[i][j] != 15 and not (x,y) in ignoreCrossings:
-                    p = PVector(x * grid/2, y * grid/2)
-                    a = crossings[i][j]
-                    if crossings[i][j] & 1 != 1:
-                        v = PVector(-5,-5)
-                        crossings[i][j] |= 1
-                    elif crossings[i][j] & 2 != 2:
-                        v = PVector(-5,5)
-                        crossings[i][j] |= 2
-                    elif crossings[i][j] & 4 != 4:
-                        v = PVector(5,-5)
-                        crossings[i][j] |= 4
-                    elif crossings[i][j] & 8 != 8:
-                        v = PVector(5,5)
-                        crossings[i][j] |= 8
-                    return p,v
-    return False, False
-
 def settings():
-    longChain()
-    initialiseCrossings()
-    size(xsize*grid,ysize*grid)
+    letters.setMessage("celtic")
+    
+    if config.flags & 1 == 1:
+        utils.symmetriseWalls()
+    if config.flags & 2 == 2:
+        utils.symmetriseIgnores()
+    utils.initialiseCrossings()
+    size(config.xsize*config.grid,config.ysize*config.grid)
     
 def setup():
     global img, p, v, s, u
-    p,v = newStrand()
+    p,v = utils.newStrand()
     s = p.copy()
     u = v.copy()
     background(255)
-    img = createGraphics(xsize*grid,ysize*grid)
+    img = createGraphics(config.xsize*config.grid,config.ysize*config.grid)
     img.beginDraw()
-    img.translate(xsize*grid/2,ysize*grid/2)
+    img.translate(config.xsize*config.grid/2,config.ysize*config.grid/2)
     img.scale(1,-1)
-    if drawGrid:
+    if config.drawGrid:
         img.stroke(127)
         img.strokeWeight(0)
-        for i in range(0,xsize):
-            for j in range(0,ysize):
-                img.rect(i*grid-xsize*grid/2,j*grid-ysize*grid/2,grid,grid)
-    if drawWalls:
+        for i in range(0,config.xsize):
+            for j in range(0,config.ysize):
+                img.rect(i*config.grid-config.xsize*config.grid/2,j*config.grid-config.ysize*config.grid/2,config.grid,config.grid)
+    if config.drawWalls:
         img.stroke(0)
         img.strokeWeight(3)
-        for w in walls:
-            img.line((w[0]-1+w[2])*grid/2,(w[1]-w[2])*grid/2,(w[0]+1-w[2])*grid/2,(w[1]+w[2])*grid/2)
+        for w in config.walls:
+            img.line((w[0]-1+w[2])*config.grid/2,(w[1]-w[2])*config.grid/2,(w[0]+1-w[2])*config.grid/2,(w[1]+w[2])*config.grid/2)
     img.endDraw()
     stroke(0)
 
 def draw():
     global p, s, v, u, c, r
     background(255)
-    translate(xsize*grid/2,ysize*grid/2)
+    translate(config.xsize*config.grid/2,config.ysize*config.grid/2)
     scale(1,-1)
     fill(0)
     imageMode(CENTER)
@@ -201,7 +55,7 @@ def draw():
     image(img,0,0)
     popMatrix()
     if not r:
-        if recording:
+        if config.recording:
             saveFrame("frames/celtic-####.png")
         print("All done")
         noLoop()
@@ -210,43 +64,43 @@ def draw():
     p.add(v)
     d = PVector(0,0)
     trace = True
-    if nearCrossing(p):
-        t = crossingType(p)
+    if utils.nearCrossing(p):
+        t = utils.crossingType(p)
         if v.x == -t*v.y:
             trace = False
         if t == 0:
-            w = getWall(p)
-            d.x = -(w[0]*grid/2 - p.x)*(1 - w[2])/4
-            d.y = -(w[1]*grid/2 - p.y)*w[2]/4
-    if atCrossing(p):
-        gx,gy = getCrossing(p)
-        crossings[gx][gy] |= int(2**((-v.x+5)/5 + (-v.y+5)/10))
-        t = crossingType(p)
+            w = utils.getWall(p)
+            d.x = -(w[0]*config.grid/2 - p.x)*(1 - w[2])/4
+            d.y = -(w[1]*config.grid/2 - p.y)*w[2]/4
+    if utils.atCrossing(p):
+        gx,gy = utils.getCrossing(p)
+        config.crossings[gx][gy] |= int(2**((-v.x+5)/5 + (-v.y+5)/10))
+        t = utils.crossingType(p)
         if v.x != t*v.y:
             trace = False
         if t == 0:
-            w = getWall(p)
+            w = utils.getWall(p)
             if w[2] == 1:
                 v.x *= -1
             else:
                 v.y *= -1
-        crossings[gx][gy] |= int(2**((v.x+5)/5 + (v.y+5)/10))
+        config.crossings[gx][gy] |= int(2**((v.x+5)/5 + (v.y+5)/10))
     if trace:
         img.beginDraw()
         #img.fill(0)
         img.noStroke()
         img.fill(*hsl2rgb(c*PHI,1,.5))
-        img.translate(xsize*grid/2,ysize*grid/2)
+        img.translate(config.xsize*config.grid/2,config.ysize*config.grid/2)
         img.scale(1,-1)
-        img.ellipse(p.x - d.x,p.y - d.y,step,step)
+        img.ellipse(p.x - d.x,p.y - d.y,config.step,config.step)
         img.endDraw()
-    ellipse(p.x,p.y,step,step)
+    ellipse(p.x,p.y,config.step,config.step)
     
-    if recording:
+    if config.recording:
         saveFrame("frames/celtic-####.png")
 
     if p == s and v == u:
-        p,v = newStrand()
+        p,v = utils.newStrand()
         if not p:
             r = False
         else:
