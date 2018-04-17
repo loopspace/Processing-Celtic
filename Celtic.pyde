@@ -10,7 +10,7 @@ c = 0
 r = True
 
 def settings():
-    letters.setMessage("celtic")
+    letters.setMessage("celtic\nknots")
     
     if config.flags & 1 == 1:
         utils.symmetriseWalls()
@@ -55,7 +55,7 @@ def draw():
     image(img,0,0)
     popMatrix()
     if not r:
-        if config.recording:
+        if config.recording or config.recordFinal:
             saveFrame("frames/celtic-####.png")
         print("All done")
         noLoop()

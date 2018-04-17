@@ -6,7 +6,8 @@ walls = set()
 ignoreCrossings = set()
 flags = 0
 
-recording = False
+recording = True
+recordFinal = True
 drawWalls = False
 drawGrid = False
 

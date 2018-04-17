@@ -2,22 +2,35 @@ import config
 
 def setMessage(s):
     config.flags = 0
-    config.xsize = 3*len(s)
-    config.ysize = 3
+    lines = s.split("\n")
+    mx = 0
+    for l in lines:
+        mx = max(mx,len(l))
+    config.xsize = 3*mx
+    config.ysize = 3*len(lines)
     config.walls = set()
     config.ignoreCrossings = set()
-    x = 3 - 3*len(s)
-    m = s.upper()
-    for c in m:
-        for w in chars[c]:
-            config.walls.add((w[0]+x,w[1],w[2]))
-        x += 3
-        if x != config.xsize:
-            config.walls.add((x,-2,1))
-            config.walls.add((x,0,1))
-            config.walls.add((x,2,1))
-        x += 3
-
+    x = 3 - 3*mx
+    y = 3*len(lines) - 3
+    for l in lines:
+        m = l.upper()
+        for c in m:
+            for w in chars[c]:
+                config.walls.add((w[0]+x,w[1] + y,w[2]))
+            x += 3
+            if x != config.xsize:
+                config.walls.add((x,y-2,1))
+                config.walls.add((x,y,1))
+                config.walls.add((x,y+2,1))
+            x += 3
+        y -= 3
+        if y != config.ysize:
+            for xx in range(2*config.xsize):
+                config.walls.add((xx - config.xsize,y,0))
+        y -= 3
+        x = 3 - 3*mx
+            
+    
 chars = {}
 chars["A"] = {(1,-2,1),(-1,-2,1),(0,-1,0),(0,1,0)}
 chars["B"] = {(0,1,0),(0,-1,0),(-1,0,1)}
@@ -45,3 +58,4 @@ chars["W"] = {(-1,0,1),(1,0,1),(-1,2,1),(1,2,1)}
 chars["X"] = {(-2,1,0),(-2,-1,0),(-1,0,1),(1,0,1),(2,1,0),(2,-1,0)}
 chars["Y"] = {(0,1,0),(-1,2,1),(1,2,1),(-1,-2,1),(-2,-1,0),(1,-2,1),(2,-1,0)}
 chars["Z"] = {(0,1,0),(0,-1,0),(-2,1,0),(2,-1,0)}
+chars[" "] = set()
